@@ -37,7 +37,6 @@ export const loginCompany = async (data) => {
 // Add this inside services/CompanyAPI.js
 export const uploadCompanyDocuments = async (formData) => {
     try {
-        // Axios handles multi-part headers automatically when passing FormData
         const response = await API.put('/company-auth/upload-documents', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',

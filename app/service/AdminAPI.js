@@ -1,5 +1,4 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
@@ -12,7 +11,7 @@ const API = axios.create({
 // Interceptor to attach the token from AsyncStorage
 API.interceptors.request.use(async (config) => {
     try {
-        const token = await AsyncStorage.getItem('adminToken');
+        const token = await localStorage.getItem('adminToken');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -24,7 +23,7 @@ API.interceptors.request.use(async (config) => {
 
 export const loginAdmin = async (data) => {
     try {
-        const response = await API.post('/admin/login', data);
+        const response = await API.post('/admin-auth/login', data);
         return response.data;
     } catch (error) {
         throw error;
