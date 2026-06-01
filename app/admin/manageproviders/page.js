@@ -10,7 +10,7 @@ import {
 } from '../../service/AdminAPI'; // Adjust path based on your folder structure
 import {
     CheckCircle, XCircle, Ban, Trash2, Eye, Star, MapPin, Mail, Phone,
-    Search, Filter, RefreshCcw, UserCheck, Users, AlertCircle, Briefcase, 
+    Search, Filter, RefreshCcw, UserCheck, Users, AlertCircle, Briefcase,
     Calendar, Award, Building, Landmark, CreditCard, ShieldCheck, HelpCircle, AlertTriangle
 } from 'lucide-react';
 
@@ -79,7 +79,7 @@ const ProviderManagementPage = () => {
             });
             fetchData();
             fetchStats();
-            
+
             // Sync modal state if active
             if (selectedProvider && selectedProvider._id === id) {
                 setSelectedProvider(prev => ({ ...prev, isBlocked: !currentBlockStatus }));
@@ -105,15 +105,15 @@ const ProviderManagementPage = () => {
     };
 
     return (
-        <div className="p-6 md:p-8 bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
+        <div className="p-6 md:p-8 pt-0 bg-slate-50 min-h-screen font-sans antialiased text-slate-800">
             {/* Header & Stats */}
             <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Provider Management</h1>
                     <p className="text-sm text-slate-500 mt-1">Review credentials, verify system access, and monitor onboarded service providers.</p>
                 </div>
-                <button 
-                    onClick={() => { fetchData(); fetchStats(); }} 
+                <button
+                    onClick={() => { fetchData(); fetchStats(); }}
                     className="flex items-center gap-2 self-start md:self-auto px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-sm text-sm font-medium text-slate-700 transition active:scale-95"
                 >
                     <RefreshCcw className={`w-4 h-4 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
@@ -238,23 +238,23 @@ const ProviderManagementPage = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-1">
-                                            <button 
-                                                onClick={() => setSelectedProvider(p)} 
-                                                className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition" 
+                                            <button
+                                                onClick={() => setSelectedProvider(p)}
+                                                className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition"
                                                 title="View Verification Details"
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </button>
-                                            <button 
-                                                onClick={() => handleToggleBlock(p._id, p.isBlocked)} 
-                                                className={`p-2 rounded-xl transition ${p.isBlocked ? 'text-rose-600 bg-rose-100 hover:bg-rose-200' : 'text-slate-600 hover:text-rose-600 hover:bg-rose-50'}`} 
+                                            <button
+                                                onClick={() => handleToggleBlock(p._id, p.isBlocked)}
+                                                className={`p-2 rounded-xl transition ${p.isBlocked ? 'text-rose-600 bg-rose-100 hover:bg-rose-200' : 'text-slate-600 hover:text-rose-600 hover:bg-rose-50'}`}
                                                 title={p.isBlocked ? "Unblock Provider" : "Block Provider"}
                                             >
                                                 <Ban className="w-4 h-4" />
                                             </button>
-                                            <button 
-                                                onClick={() => handleDelete(p._id)} 
-                                                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition" 
+                                            <button
+                                                onClick={() => handleDelete(p._id)}
+                                                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition"
                                                 title="Hard Delete Record"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -278,8 +278,8 @@ const ProviderManagementPage = () => {
                                 <h2 className="text-xl font-bold text-slate-900">Credential Verification Desk</h2>
                                 <p className="text-xs text-slate-400 mt-0.5">Evaluate system profile parameters against government identifications.</p>
                             </div>
-                            <button 
-                                onClick={() => setSelectedProvider(null)} 
+                            <button
+                                onClick={() => setSelectedProvider(null)}
                                 className="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-lg text-xl transition"
                             >
                                 &times;
@@ -296,9 +296,9 @@ const ProviderManagementPage = () => {
                                     </h3>
                                     <div className="bg-slate-50/60 p-4 rounded-xl border border-slate-100 space-y-3 text-slate-700">
                                         <div className="flex justify-between border-b border-slate-100 pb-2"><span className="text-slate-400 text-xs">Full Legal Name</span> <span className="font-semibold text-slate-900">{selectedProvider.fullName}</span></div>
-                                        <div className="flex justify-between border-b border-slate-100 pb-2 flex-wrap gap-1"><span className="text-slate-400 text-xs">Email Endpoint</span> <span className="font-medium text-slate-900 flex items-center gap-1"><Mail className="w-3 h-3 text-slate-400"/> {selectedProvider.email || 'N/A'}</span></div>
-                                        <div className="flex justify-between border-b border-slate-100 pb-2"><span className="text-slate-400 text-xs">Contact Line</span> <span className="font-medium text-slate-900 flex items-center gap-1"><Phone className="w-3 h-3 text-slate-400"/> {selectedProvider.phone}</span></div>
-                                        <div className="flex justify-between border-b border-slate-100 pb-2"><span className="text-slate-400 text-xs">Industry Experience</span> <span className="font-semibold text-blue-700 flex items-center gap-1"><Award className="w-3 h-3"/> {selectedProvider.experienceYears} Years Active</span></div>
+                                        <div className="flex justify-between border-b border-slate-100 pb-2 flex-wrap gap-1"><span className="text-slate-400 text-xs">Email Endpoint</span> <span className="font-medium text-slate-900 flex items-center gap-1"><Mail className="w-3 h-3 text-slate-400" /> {selectedProvider.email || 'N/A'}</span></div>
+                                        <div className="flex justify-between border-b border-slate-100 pb-2"><span className="text-slate-400 text-xs">Contact Line</span> <span className="font-medium text-slate-900 flex items-center gap-1"><Phone className="w-3 h-3 text-slate-400" /> {selectedProvider.phone}</span></div>
+                                        <div className="flex justify-between border-b border-slate-100 pb-2"><span className="text-slate-400 text-xs">Industry Experience</span> <span className="font-semibold text-blue-700 flex items-center gap-1"><Award className="w-3 h-3" /> {selectedProvider.experienceYears} Years Active</span></div>
                                         <div className="flex flex-col gap-1 pt-1">
                                             <span className="text-slate-400 text-xs flex items-center gap-1"><MapPin className="w-3 h-3" /> Declared Workplace Hub</span>
                                             <span className="text-xs text-slate-900 font-medium pl-4">{selectedProvider.address?.street || 'No street info'}, {selectedProvider.address?.city || ''}</span>
@@ -448,11 +448,10 @@ const StatusBadge = ({ status }) => {
 
     return (
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${styles}`}>
-            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                status === 'approved' ? 'bg-emerald-500' : 
-                status === 'pending' ? 'bg-amber-500' : 
-                status === 'rejected' ? 'bg-rose-500' : 'bg-slate-400'
-            }`} />
+            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${status === 'approved' ? 'bg-emerald-500' :
+                    status === 'pending' ? 'bg-amber-500' :
+                        status === 'rejected' ? 'bg-rose-500' : 'bg-slate-400'
+                }`} />
             <span className="capitalize">{status}</span>
         </span>
     );

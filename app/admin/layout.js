@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }) {
   const navLinks = [
     { name: 'Overview', href: '/admin', icon: LayoutDashboard },
     { name: 'Manage Users', href: '/admin/manageusers', icon: UserCheck },
-    { name: 'Manage Category Services', href: '/admin/manageCategories', icon: Wrench },
+    { name: 'Manage Category Services', href: '/admin/managecategories', icon: Wrench },
     { name: 'Manage Providers', href: '/admin/manageproviders', icon: Wrench },
     { name: 'Manage Company', href: '/admin/managecompanies', icon: Users },
     { name: 'Manage Bookings', href: '/admin/bookings', icon: CalendarDays },
