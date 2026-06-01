@@ -1,5 +1,19 @@
+'use client'
+
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { 
+  LayoutDashboard, 
+  Wrench, 
+  Users, 
+  CalendarDays, 
+  FolderLock, 
+  Wallet, 
+  Clock, 
+  Settings,
+  LogOut
+} from 'lucide-react';
 
 // Custom design colors mapped from your design system
 const COLORS = {
@@ -13,20 +27,22 @@ const COLORS = {
 };
 
 export default function DashboardLayout({ children }) {
+  const pathname = usePathname();
+
   // Navigation Links array structured around your Company Mongoose Schema fields
   const navLinks = [
-    { name: 'Overview', href: '/company', icon: '📊' },
-    { name: 'Service Catalog', href: '/dashboard/services', icon: '🛠️' },
-    { name: 'Workers & Staff', href: '/company/manageworkers', icon: '👥' },
-    { name: 'Bookings & Analytics', href: '/dashboard/bookings', icon: '📅' },
-    { name: 'Documents & KYC', href: '/dashboard/verification', icon: '📂' },
-    { name: 'Payouts & Wallet', href: '/dashboard/financials', icon: '💰' },
-    { name: 'Business Hours', href: '/dashboard/hours', icon: '⏳' },
-    { name: 'Settings', href: '/dashboard/settings', icon: '⚙️' },
+    { name: 'Overview', href: '/company', icon: LayoutDashboard },
+    { name: 'Service Catalog', href: '/dashboard/services', icon: Wrench },
+    { name: 'Workers & Staff', href: '/company/manageworkers', icon: Users },
+    { name: 'Bookings & Analytics', href: '/dashboard/bookings', icon: CalendarDays },
+    { name: 'Documents & KYC', href: '/dashboard/verification', icon: FolderLock },
+    { name: 'Payouts & Wallet', href: '/dashboard/financials', icon: Wallet },
+    { name: 'Business Hours', href: '/company/businesshours', icon: Clock },
+    { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#F8FAFC] font-sans">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#F8FAFC] font-sans antialiased text-[#111827]">
       
       {/* LEFT SIDEBAR PANEL */}
       <aside className="w-64 h-full flex flex-col justify-between border-r border-[#E5E7EB] bg-[#FFFFFF] shrink-0">
@@ -35,7 +51,7 @@ export default function DashboardLayout({ children }) {
         <div>
           <div className="h-16 flex items-center px-6 border-b border-[#E5E7EB] gap-3">
             {/* Simple Dynamic Logo using your primary color */}
-            <div className="w-8 h-8 rounded-lg bg-[#08B36A] flex items-center justify-center text-white font-bold text-sm">
+            <div className="w-8 h-8 rounded-lg bg-[#08B36A] flex items-center justify-center text-white font-bold text-sm shrink-0">
               C
             </div>
             <div>
@@ -46,19 +62,38 @@ export default function DashboardLayout({ children }) {
 
           {/* Navigation Matrix */}
           <nav className="flex flex-col gap-1 p-4 overflow-y-auto max-h-[calc(100vh-140px)]">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className="flex items-center gap-3.5 px-4 py-3 text-sm font-semibold rounded-lg text-[#6B7280] hover:text-[#0F172A] hover:bg-[#F8FAFC] transition-all group"
-              >
-                {/* Icon Wrapper */}
-                <span className="text-base grayscale group-hover:grayscale-0 transition-all">
-                  {link.icon}
-                </span>
-                <span>{link.name}</span>
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const IconComponent = link.icon;
+              const isActive = pathname === link.href;
+
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className={`relative flex items-center gap-3.5 px-4 py-3 text-sm font-semibold rounded-lg transition-all group overflow-hidden ${
+                    isActive 
+                      ? 'text-[#0F172A] bg-emerald-50/60 shadow-sm' 
+                      : 'text-[#6B7280] hover:text-[#0F172A] hover:bg-[#F8FAFC]'
+                  }`}
+                >
+                  {/* Left edge active vertical accent marker bar */}
+                  {isActive && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#08B36A] rounded-r" />
+                  )}
+
+                  {/* Lucide Icon Wrapper with reactive layout color rendering */}
+                  <IconComponent 
+                    size={18} 
+                    className={`transition-colors shrink-0 ${
+                      isActive 
+                        ? 'text-[#08B36A]' 
+                        : 'text-[#6B7280] group-hover:text-[#08B36A]'
+                    }`} 
+                  />
+                  <span className="truncate">{link.name}</span>
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
@@ -75,10 +110,10 @@ export default function DashboardLayout({ children }) {
           </div>
           <Link 
             href="/logout" 
-            className="text-xs p-1.5 rounded hover:bg-red-50 text-[#6B7280] hover:text-[#EF4444] transition-colors"
+            className="text-xs p-2 rounded-lg hover:bg-red-50 text-[#6B7280] hover:text-[#EF4444] transition-colors flex items-center justify-center shrink-0"
             title="Log Out"
           >
-            ❌
+            <LogOut size={16} />
           </Link>
         </div>
 

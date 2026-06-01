@@ -147,3 +147,24 @@ export const deleteCompanyService = async (serviceId) => {
         throw error;
     }
 };
+
+
+export const getAllCompanyBusinessHours = async () => {
+    const response = await API.get('/company-hours');
+    return response.data;
+};
+
+export const updateCompanyBusinessHours = async (data) => {
+    const response = await API.put('/company-hours', data);
+    return response.data;
+};
+
+export const updateSingleDayBusinessHours = async (day, data) => {
+    const response = await API.patch(`/company-hours/${day}`, data);
+    return response.data;
+};
+
+export const toggleCompanyBusinessDayStatus = async (day) => {
+    const response = await API.patch(`/company-hours/${day}/toggle`);
+    return response.data;
+};
