@@ -1,355 +1,454 @@
 "use client";
-import React, { useState } from 'react';
-import { 
-  Building2, 
-  CheckCircle2, 
-  XCircle, 
-  Search, 
-  Filter, 
-  ShieldCheck, 
-  Clock, 
-  FileText, 
-  AlertCircle,
-  ExternalLink,
-  ChevronRight
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Building2, CheckCircle2, XCircle, Search, Clock, ShieldCheck,
+  FileText, AlertCircle, ExternalLink, ChevronRight, Loader2, RefreshCw,
+  User, Phone, Mail, MapPin, Briefcase, DollarSign, Award, Calendar
 } from 'lucide-react';
-
-const COLORS = {
-  primary: "#08B36A",
-  secondary: "#0F172A",
-  background: "#F8FAFC",
-  card: "#FFFFFF",
-  text: "#111827",
-  subtext: "#6B7280",
-  border: "#E5E7EB",
-  white: "#FFFFFF",
-  danger: "#EF4444",
-};
+import { fetchAllCompanies, adminVerifyCompany } from '../../service/AdminAPI';
 
 export default function ManageCompaniesPage() {
-  const [activeTab, setActiveTab] = useState('pending'); // pending | approved | rejected
+  const [activeTab, setActiveTab] = useState('pending');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showActionModal, setShowActionModal] = useState(false);
 
-  // Mock corporate data mapping directly to your schema design properties
-  const [companies, setCompanies] = useState([
-    {
-      id: "COM-7012",
-      companyName: "Hyperion Facility Management",
-      ownerName: "Aman Malhotra",
-      companyEmail: "onboarding@hyperion.in",
-      companyPhone: "+91 98123 45670",
-      gstNumber: "07AAAAA1111A1Z1",
-      panNumber: "ABCDE1234F",
-      verificationStatus: "pending",
-      companySize: "26-50",
-      foundedYear: 2021,
-      city: "New Delhi"
-    },
-    {
-      id: "COM-7013",
-      companyName: "BlueCollar Electro-Mechanical Ltd",
-      ownerName: "Harpreet Singh",
-      companyEmail: "contact@bluecollar.com",
-      companyPhone: "+91 91122 33445",
-      gstNumber: "06BBBBB2222B2Z2",
-      panNumber: "WXYZR9876Q",
-      verificationStatus: "pending",
-      companySize: "100+",
-      foundedYear: 2018,
-      city: "Gurugram"
-    },
-    {
-      id: "COM-5001",
-      companyName: "EcoClean Deep Cleaning Specialists",
-      ownerName: "Meera Nair",
-      companyEmail: "meera@ecoclean.org",
-      companyPhone: "+91 95678 12345",
-      gstNumber: "32CCCCC3333C3Z3",
-      panNumber: "PLMKO7412N",
-      verificationStatus: "approved",
-      companySize: "11-25",
-      foundedYear: 2023,
-      city: "Mumbai"
-    }
-  ]);
+  const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Status adjustment workflows updating verification state hooks
-  const handleUpdateStatus = (id, nextStatus, reason = "") => {
-    setCompanies(prev => prev.map(company => {
-      if (company.id === id) {
-        return { 
-          ...company, 
-          verificationStatus: nextStatus,
-          rejectionReason: reason,
-          verifiedAt: nextStatus === 'approved' ? new Date() : undefined
-        };
+  // 1. Fetch Data
+  const loadCompanies = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetchAllCompanies();
+
+      if (res.success) {
+        setCompanies(res.data || []);
       }
-      return company;
-    }));
+    } catch (err) {
+      setError("Connection Error: Could not reach the administration server.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCompanies();
+  }, [loadCompanies]);
+
+  // 2. Approve Action
+  const handleApprove = async (id) => {
+    try {
+      setActionLoading(true);
+      const res = await adminVerifyCompany(id, { status: 'approved' });
+
+      if (res.success) {
+        setCompanies(prev => prev.map(c => c._id === id ? { ...c, verificationStatus: 'approved' } : c));
+        closeModal();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || "Approval failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 3. Reject Action
+  const handleReject = async (id) => {
+    if (!rejectionReason.trim()) return alert("Please provide a reason for rejection.");
+
+    try {
+      setActionLoading(true);
+      const res = await adminVerifyCompany(id, {
+        status: 'rejected',
+        rejectionReason: rejectionReason
+      });
+
+      if (res.success) {
+        setCompanies(prev => prev.map(c => c._id === id ? { ...c, verificationStatus: 'rejected', rejectionReason: rejectionReason } : c));
+        closeModal();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || "Rejection failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const closeModal = () => {
     setShowActionModal(false);
     setSelectedCompany(null);
     setRejectionReason('');
   };
 
-  // Compute dynamic category filter lists
-  const filteredCompanies = companies.filter(company => {
-    const matchesTab = company.verificationStatus === activeTab;
-    const matchesSearch = company.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          company.ownerName.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filtering
+  const filteredCompanies = companies.filter(c => {
+    const matchesTab = c.verificationStatus === activeTab;
+    const matchesSearch = c.companyName?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
-  // Structural dynamic counters matching metrics arrays
-  const countByStatus = (status) => companies.filter(c => c.verificationStatus === status).length;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-[400px]">
+      <Loader2 className="animate-spin text-emerald-500 mb-2" size={32} />
+      <p className="text-slate-500 font-bold text-sm uppercase tracking-widest">Loading Registry...</p>
+    </div>
+  );
 
   return (
-    <div className="flex flex-col gap-6 w-full font-sans">
-      
-      {/* 1. Header Area Layout */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#0F172A]">Company Verification Desk</h1>
-        <p className="text-sm text-[#6B7280]">Audit credentials, evaluate registration files, and manage live access statuses.</p>
-      </div>
-
-      {/* 2. Interactive Navigation Filtering Tabs */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#E5E7EB] pb-px">
-        <div className="flex gap-2">
-          {[
-            { id: 'pending', name: 'Pending Review', icon: Clock, count: countByStatus('pending'), color: 'text-amber-600 bg-amber-50 border-amber-200' },
-            { id: 'approved', name: 'Approved Partners', icon: ShieldCheck, count: countByStatus('approved'), color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
-            { id: 'rejected', name: 'Rejected Applications', icon: XCircle, count: countByStatus('rejected'), color: 'text-red-600 bg-red-50 border-red-200' }
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => { setActiveTab(tab.id); setSearchQuery(''); }}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer relative ${
-                  isActive ? 'border-[#08B36A] text-[#08B36A]' : 'border-transparent text-[#6B7280] hover:text-[#0F172A]'
-                }`}
-              >
-                <Icon size={16} />
-                <span>{tab.name}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-bold border ${
-                  isActive ? tab.color : 'bg-slate-100 text-slate-600 border-slate-200'
-                }`}>
-                  {tab.count}
-                </span>
-              </button>
-            );
-          })}
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 italic uppercase">Verification Center</h1>
+          <p className="text-slate-500 text-sm">Reviewing {companies.length} registered organizations</p>
         </div>
-
-        {/* Action Table Filter Input */}
-        <div className="relative w-full sm:w-72 mb-2 sm:mb-0">
-          <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
-          <input
-            type="text"
-            placeholder="Search enterprise or owner..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-1.5 bg-white border border-[#E5E7EB] rounded-lg text-sm focus:outline-none focus:border-[#08B36A] text-black"
-          />
+        <div className="flex items-center gap-4">
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Search companies..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 border rounded-xl text-sm focus:outline-none focus:border-emerald-500 w-64 bg-white"
+            />
+          </div>
+          <button onClick={loadCompanies} className="p-2 hover:bg-white border rounded-xl transition-all">
+            <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
+          </button>
         </div>
       </div>
 
-      {/* 3. Companies Registry Display Grid */}
-      <div className="bg-white border border-[#E5E7EB] rounded-xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#F8FAFC] border-b border-[#E5E7EB] text-[11px] font-bold uppercase text-[#6B7280] tracking-wider">
-                <th className="p-4 pl-6">Company Profile</th>
-                <th className="p-4">Primary Contact</th>
-                <th className="p-4">Tax / Legal Identification</th>
-                <th className="p-4">Size & Scale</th>
-                <th className="p-4">Location</th>
-                <th className="p-4 pr-6 text-right">Actions</th>
+      {error && <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 flex items-center gap-2 font-bold text-sm"><AlertCircle size={18} /> {error}</div>}
+
+      {/* Tabs */}
+      <div className="flex border-b border-slate-200 gap-8">
+        {['pending', 'approved', 'rejected'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`pb-4 text-sm font-black uppercase tracking-tighter transition-all ${activeTab === tab ? 'text-emerald-500 border-b-2 border-emerald-500' : 'text-slate-400'}`}
+          >
+            {tab} ({companies.filter(c => c.verificationStatus === tab).length})
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-sm">
+        {filteredCompanies.length === 0 ? (
+          <div className="p-12 text-center text-slate-400 font-medium">No companies found in this section.</div>
+        ) : (
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 border-b border-slate-100">
+              <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="p-6">Company Name</th>
+                <th className="p-6">Contact</th>
+                <th className="p-6">Status</th>
+                <th className="p-6 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E5E7EB] text-sm text-[#111827]">
-              {filteredCompanies.length > 0 ? (
-                filteredCompanies.map((company) => (
-                  <tr key={company.id} className="hover:bg-slate-50/60 transition-colors">
-                    {/* Column 1: Core Branding Frame */}
-                    <td className="p-4 pl-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 font-bold border border-slate-200">
-                          <Building2 size={20} />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-[#111827]">{company.companyName}</h4>
-                          <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-bold">{company.id}</span>
-                        </div>
+            <tbody className="divide-y divide-slate-100">
+              {filteredCompanies.map(company => (
+                <tr key={company._id} className="hover:bg-slate-50/50 transition-all">
+                  <td className="p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400">
+                        {company.companyLogo ? <img src={company.companyLogo} alt="Logo" className="w-full h-full object-cover rounded-xl" /> : <Building2 size={20} />}
                       </div>
-                    </td>
-
-                    {/* Column 2: Operator Metadata */}
-                    <td className="p-4">
-                      <p className="font-semibold">{company.ownerName}</p>
-                      <p className="text-xs text-[#6B7280]">{company.companyEmail}</p>
-                    </td>
-
-                    {/* Column 3: Corporate Identification Parameters */}
-                    <td className="p-4 text-xs font-medium">
-                      <div className="flex items-center gap-1"><FileText size={12} className="text-slate-400" /> GST: <span className="font-mono uppercase font-bold">{company.gstNumber}</span></div>
-                      <div className="flex items-center gap-1 mt-0.5 text-slate-500"><FileText size={12} className="text-slate-400" /> PAN: <span className="font-mono uppercase">{company.panNumber}</span></div>
-                    </td>
-
-                    {/* Column 4: Operational Metrics */}
-                    <td className="p-4">
-                      <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
-                        {company.companySize} Crew members
-                      </span>
-                      <span className="block text-[10px] text-slate-400 mt-1">Est. {company.foundedYear}</span>
-                    </td>
-
-                    {/* Column 5: Location */}
-                    <td className="p-4 font-medium text-slate-600">{company.city}</td>
-
-                    {/* Column 6: Action Engine Row */}
-                    <td className="p-4 pr-6 text-right">
-                      <button
-                        onClick={() => { setSelectedCompany(company); setShowActionModal(true); }}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 border border-[#E5E7EB] hover:bg-slate-50 font-bold text-xs rounded-lg text-[#0F172A] transition-all cursor-pointer"
-                      >
-                        Review Application <ChevronRight size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="p-12 text-center text-sm text-[#6B7280] font-medium">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <AlertCircle size={24} className="text-slate-300" />
-                      <span>No company records matching your filter parameters are currently available.</span>
+                      <div>
+                        <span className="font-bold text-slate-800 block">{company.companyName}</span>
+                        <span className="text-xs text-slate-400">Owner: {company.ownerName || 'N/A'}</span>
+                      </div>
                     </div>
                   </td>
+                  <td className="p-6 text-sm text-slate-500 font-medium">
+                    <div>{company.companyPhone}</div>
+                    <div className="text-xs text-slate-400">{company.companyEmail}</div>
+                  </td>
+                  <td className="p-6">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${company.verificationStatus === 'approved' ? 'bg-emerald-50 text-emerald-600' :
+                        company.verificationStatus === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
+                      }`}>
+                      {company.verificationStatus}
+                    </span>
+                  </td>
+                  <td className="p-6 text-right">
+                    <button onClick={() => { setSelectedCompany(company); setShowActionModal(true); }} className="text-slate-900 font-bold text-xs bg-slate-50 border px-4 py-2 rounded-xl hover:bg-white transition-all">Review</button>
+                  </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
-        </div>
+        )}
       </div>
 
-      {/* 4. Action Verification Modal Overlay Panel */}
+      {/* Verification Modal */}
       {showActionModal && selectedCompany && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 animate-fadeIn">
-          <div className="bg-white rounded-xl border border-[#E5E7EB] shadow-xl w-full max-w-lg overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-4xl rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[90vh]">
             
-            {/* Modal Top Header Bar */}
-            <div className="p-5 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
+            {/* Modal Header */}
+            <div className="p-6 border-b flex justify-between items-center bg-slate-50">
               <div>
-                <h2 className="text-base font-bold text-[#0F172A]">Review Corporate Credentials</h2>
-                <p className="text-xs text-[#6B7280]">Validate structural payload properties for: <span className="font-bold">{selectedCompany.companyName}</span></p>
+                <h2 className="text-xl font-black text-slate-900 italic uppercase">AUDIT CONSOLE</h2>
+                <p className="text-xs text-slate-500">ID: {selectedCompany._id}</p>
               </div>
-              <button 
-                onClick={() => { setShowActionModal(false); setSelectedCompany(null); setRejectionReason(''); }}
-                className="text-slate-400 hover:text-slate-600 text-xl cursor-pointer"
-              >
-                ×
-              </button>
+              <button onClick={closeModal}><XCircle className="text-slate-300 hover:text-slate-500" size={24} /></button>
             </div>
 
-            {/* Modal Corporate Data Matrix */}
-            <div className="p-6 flex flex-col gap-4 overflow-y-auto max-h-[70vh]">
-              <div className="grid grid-cols-2 gap-4 text-xs border-b border-[#E5E7EB] pb-4">
-                <div>
-                  <span className="text-slate-400 block font-semibold uppercase tracking-wider">Legal Registered Name</span>
-                  <span className="text-sm font-bold text-[#111827]">{selectedCompany.companyName}</span>
+            {/* Modal Body (Scrollable container) */}
+            <div className="p-8 space-y-8 overflow-y-auto flex-1 text-slate-700">
+              
+              {/* SECTION 1: Core Profile */}
+              <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-white border border-slate-200 rounded-2xl flex items-center justify-center text-slate-400 overflow-hidden shadow-sm">
+                    {selectedCompany.companyLogo ? <img src={selectedCompany.companyLogo} alt="Logo" className="w-full h-full object-cover" /> : <Building2 size={32} />}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">{selectedCompany.companyName}</h3>
+                    <p className="text-sm text-slate-500 italic max-w-md">{selectedCompany.description || "No business description provided yet."}</p>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-slate-400 block font-semibold uppercase tracking-wider">Managing Director</span>
-                  <span className="text-sm font-bold text-[#111827]">{selectedCompany.ownerName}</span>
-                </div>
-                <div className="mt-2">
-                  <span className="text-slate-400 block font-semibold uppercase tracking-wider">Corporate Email</span>
-                  <span className="text-slate-700 font-medium">{selectedCompany.companyEmail}</span>
-                </div>
-                <div className="mt-2">
-                  <span className="text-slate-400 block font-semibold uppercase tracking-wider">Corporate Hotline</span>
-                  <span className="text-slate-700 font-medium">{selectedCompany.companyPhone}</span>
+                <div className="flex flex-col gap-2 w-full md:w-auto">
+                  <div className="flex items-center justify-between gap-4 text-xs">
+                    <span className="font-semibold text-slate-400 uppercase">Verification status:</span>
+                    <span className="font-black text-amber-600 uppercase bg-amber-50 px-2 py-0.5 rounded-md">{selectedCompany.verificationStatus}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 text-xs">
+                    <span className="font-semibold text-slate-400 uppercase">Subscription:</span>
+                    <span className="font-black text-purple-600 uppercase bg-purple-50 px-2 py-0.5 rounded-md">{selectedCompany.subscriptionPlan}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Document File Check row simulation */}
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-bold text-[#111827]">Uploaded Compliance Attachments</span>
-                <div className="grid grid-cols-1 gap-2">
-                  {[
-                    { label: 'GSTIN Certificate Asset', value: selectedCompany.gstNumber },
-                    { label: 'Permanent Account Number (PAN)', value: selectedCompany.panNumber }
-                  ].map((doc, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2.5 bg-slate-50 border border-[#E5E7EB] rounded-lg text-xs">
-                      <div className="flex items-center gap-2 truncate">
-                        <FileText size={14} className="text-slate-400 shrink-0" />
-                        <span className="text-slate-700 font-medium truncate"><span className="font-bold">{doc.label}:</span> {doc.value}</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                {/* Left Column: Communications & Corporate Identification */}
+                <div className="space-y-6">
+                  {/* Contacts Block */}
+                  <div>
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"><User size={14}/> Primary Registry Contacts</h4>
+                    <div className="border border-slate-100 rounded-2xl p-4 space-y-3 bg-white shadow-sm">
+                      <div className="flex items-center justify-between text-sm pb-2 border-b border-slate-50">
+                        <span className="text-slate-400 font-medium">Authorized Owner</span>
+                        <span className="font-bold text-slate-800">{selectedCompany.ownerName || 'Not Stated'}</span>
                       </div>
-                      <a href="#view" className="text-[#08B36A] hover:underline font-bold flex items-center gap-0.5 shrink-0 ml-2">
-                        View <ExternalLink size={11} />
-                      </a>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400 font-medium flex items-center gap-1"><Phone size={14}/> Company Phone</span>
+                        <div className="text-right">
+                          <span className="font-bold text-slate-800 block">{selectedCompany.companyPhone}</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${selectedCompany.isPhoneVerified ? 'bg-emerald-50 text-emerald-600':'bg-red-50 text-red-500'}`}>
+                            {selectedCompany.isPhoneVerified ? 'Verified' : 'Unverified'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-50">
+                        <span className="text-slate-400 font-medium flex items-center gap-1"><Mail size={14}/> Company Email</span>
+                        <div className="text-right">
+                          <span className="font-bold text-slate-800 block">{selectedCompany.companyEmail}</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${selectedCompany.isEmailVerified ? 'bg-emerald-50 text-emerald-600':'bg-red-50 text-red-500'}`}>
+                            {selectedCompany.isEmailVerified ? 'Verified' : 'Unverified'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Corporate Identifications */}
+                  <div>
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"><ShieldCheck size={14}/> Corporate Identifications</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                        <span className="text-[10px] font-bold text-slate-400 block uppercase">GST Number</span>
+                        <span className="text-sm font-mono font-bold text-slate-800">{selectedCompany.gstNumber || 'N/A'}</span>
+                      </div>
+                      <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                        <span className="text-[10px] font-bold text-slate-400 block uppercase">PAN Number</span>
+                        <span className="text-sm font-mono font-bold text-slate-800">{selectedCompany.panNumber || 'N/A'}</span>
+                      </div>
+                      <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                        <span className="text-[10px] font-bold text-slate-400 block uppercase">CIN Number</span>
+                        <span className="text-sm font-mono font-bold text-slate-800">{selectedCompany.cinNumber || 'N/A'}</span>
+                      </div>
+                      <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                        <span className="text-[10px] font-bold text-slate-400 block uppercase">Business Reg. No</span>
+                        <span className="text-sm font-mono font-bold text-slate-800">{selectedCompany.businessRegistrationNumber || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Operational Settings */}
+                  <div>
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"><MapPin size={14}/> Logistical Footprint</h4>
+                    <div className="border border-slate-100 rounded-2xl p-4 space-y-3 bg-white shadow-sm">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400 font-medium">Service Radius</span>
+                        <span className="font-bold text-slate-800">{selectedCompany.serviceRadiusKm} Km</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400 font-medium">Current Registered Workers</span>
+                        <span className="font-bold text-slate-800">{selectedCompany.totalWorkers} active</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400 font-medium">Platform Commission rate</span>
+                        <span className="font-bold text-emerald-600">{selectedCompany.commissionPercentage}% per project</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Right Column: Business Hours & Financial Health */}
+                <div className="space-y-6">
+                  
+                  {/* Business Operational Hours Grid */}
+                  <div>
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Clock size={14}/> Weekly Business Schedule</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-2 gap-2">
+                      {selectedCompany.businessHours && Object.entries(selectedCompany.businessHours).map(([day, config]) => (
+                        <div key={day} className="flex items-center justify-between p-2 px-3 border rounded-xl text-xs bg-white shadow-sm">
+                          <span className="capitalize font-bold text-slate-600">{day.substring(0,3)}</span>
+                          <span className={`font-black text-[9px] px-2 py-0.5 rounded-md uppercase ${config.isOpen ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-400'}`}>
+                            {config.isOpen ? 'Open' : 'Closed'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Financial Audit Block */}
+                  <div>
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"><DollarSign size={14}/> Financial Accounting Metrics</h4>
+                    <div className="border border-slate-100 rounded-2xl p-4 space-y-3 bg-white shadow-sm">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400 font-medium">Wallet Balance</span>
+                        <span className="font-mono font-bold text-slate-800">${selectedCompany.walletBalance}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400 font-medium">Gross Aggregated Earnings</span>
+                        <span className="font-mono font-bold text-emerald-600">${selectedCompany.totalEarnings}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400 font-medium">Total Volume Withdrawn</span>
+                        <span className="font-mono font-bold text-slate-500">${selectedCompany.totalWithdrawn}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Operational Quality Metrics */}
+                  <div>
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Award size={14}/> Marketplace Statistics</h4>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="p-3 border border-slate-100 bg-white rounded-xl shadow-sm">
+                        <span className="text-[9px] font-bold text-slate-400 block uppercase">Rating</span>
+                        <span className="text-sm font-black text-slate-800">{selectedCompany.averageRating}★</span>
+                      </div>
+                      <div className="p-3 border border-slate-100 bg-white rounded-xl shadow-sm">
+                        <span className="text-[9px] font-bold text-slate-400 block uppercase">Total Jobs</span>
+                        <span className="text-sm font-black text-slate-800">{selectedCompany.totalBookings}</span>
+                      </div>
+                      <div className="p-3 border border-slate-100 bg-white rounded-xl shadow-sm">
+                        <span className="text-[9px] font-bold text-slate-400 block uppercase">Completion</span>
+                        <span className="text-sm font-black text-emerald-600">{selectedCompany.completionRate}%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* SECTION 3: Legal Documentation Attachments */}
+              <div>
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"><FileText size={14}/> Verification Documentation Attachments</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { label: 'Business License/Reg', url: selectedCompany.businessLicense },
+                    { label: 'GST Certificate', url: selectedCompany.gstCertificate },
+                    { label: 'Owner Identification ID', url: selectedCompany.ownerIdProof },
+                    { label: 'Insurance Policy Doc', url: selectedCompany.insuranceDocument }
+                  ].map(doc => (
+                    <div key={doc.label} className="p-4 border rounded-2xl flex flex-col justify-between items-start gap-3 bg-white shadow-sm hover:border-slate-300 transition-all">
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 block uppercase mb-1">Document Type</span>
+                        <span className="text-xs font-bold text-slate-800 line-clamp-1">{doc.label}</span>
+                      </div>
+                      {doc.url ? (
+                        <a href={doc.url} target="_blank" rel="noreferrer" className="text-emerald-500 hover:text-emerald-600 text-xs font-bold flex items-center gap-1 mt-1 bg-emerald-50/50 px-2.5 py-1.5 rounded-lg w-full justify-center border border-emerald-100/50">
+                          Inspect File <ExternalLink size={12} />
+                        </a>
+                      ) : (
+                        <span className="text-xs font-medium text-slate-400 italic bg-slate-50 px-2 py-1 rounded w-full text-center">Missing Upload</span>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Status Conditional Rejection Field UI */}
-              {selectedCompany.verificationStatus !== 'approved' && (
-                <div className="flex flex-col gap-1.5 mt-2">
-                  <label className="text-xs font-bold text-[#111827]">Rejection Logs <span className="text-slate-400 font-normal">(Only processed on Denial action)</span></label>
+              {/* SECTION 4: Rejection Context Logs */}
+              {activeTab === 'pending' && (
+                <div className="space-y-2 pt-4 border-t border-slate-100">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><AlertCircle size={12}/> Rejection Feedback Log (Required if rejecting)</label>
                   <textarea
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-red-300 focus:bg-white transition-all text-sm"
                     rows={3}
+                    placeholder="Provide detailed, clear points on why validation failed so the partner organization can adjust their data assets..."
                     value={rejectionReason}
                     onChange={(e) => setRejectionReason(e.target.value)}
-                    placeholder="Provide compliance rejection issue details (e.g., GSTIN numbers mismatched, document scan blur)..."
-                    className="w-full p-3 border border-[#E5E7EB] rounded-lg text-xs focus:outline-none focus:border-[#08B36A] text-black"
                   />
                 </div>
               )}
+
+              {/* Show previous rejection reason if viewing a rejected company */}
+              {activeTab === 'rejected' && selectedCompany.rejectionReason && (
+                <div className="p-4 bg-red-50/50 border border-red-100 rounded-2xl text-sm">
+                  <span className="text-xs font-bold text-red-700 block uppercase mb-1">Historical Rejection Reason:</span>
+                  <p className="text-red-600 font-medium">{selectedCompany.rejectionReason}</p>
+                </div>
+              )}
+
             </div>
 
-            {/* Modal Structural Action Footer Steering Strip */}
-            <div className="p-4 border-t border-[#E5E7EB] bg-slate-50 flex flex-col sm:flex-row sm:justify-between items-center gap-3">
-              <div>
-                {selectedCompany.verificationStatus === 'rejected' && selectedCompany.rejectionReason && (
-                  <p className="text-[11px] text-[#EF4444] font-medium max-w-xs">
-                    <span className="font-bold">Prior Rejection Logic:</span> {selectedCompany.rejectionReason}
-                  </p>
-                )}
-              </div>
+            {/* Modal Action Footer */}
+            <div className="p-6 bg-slate-50 border-t flex gap-4 justify-end">
+              <button 
+                onClick={closeModal} 
+                className="px-6 py-3 bg-white border border-slate-200 text-slate-600 font-bold text-sm rounded-xl hover:bg-slate-100 transition-all"
+              >
+                Cancel Audit
+              </button>
               
-              <div className="flex gap-2 w-full sm:w-auto justify-end">
-                {selectedCompany.verificationStatus !== 'rejected' && (
+              {activeTab === 'pending' && (
+                <>
                   <button
-                    type="button"
-                    disabled={!rejectionReason.trim()}
-                    onClick={() => handleUpdateStatus(selectedCompany.id, 'rejected', rejectionReason)}
-                    className="px-4 py-2 bg-white hover:bg-red-50 border border-red-200 text-[#EF4444] font-bold text-xs rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled={actionLoading || !rejectionReason.trim()}
+                    onClick={() => handleReject(selectedCompany._id)}
+                    className="px-6 py-3 bg-red-500 text-white rounded-xl font-bold text-sm hover:bg-red-600 transition-all disabled:opacity-40 shadow-md shadow-red-100"
                   >
-                    Reject Partner
+                    Reject Application
                   </button>
-                )}
-                {selectedCompany.verificationStatus !== 'approved' && (
                   <button
-                    type="button"
-                    onClick={() => handleUpdateStatus(selectedCompany.id, 'approved')}
-                    className="px-4 py-2 bg-[#08B36A] hover:opacity-90 text-white font-bold text-xs rounded-lg transition-all cursor-pointer"
+                    disabled={actionLoading}
+                    onClick={() => handleApprove(selectedCompany._id)}
+                    className="px-8 py-3 bg-emerald-500 text-white rounded-xl font-bold text-sm hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-100 flex items-center gap-2"
                   >
-                    Approve & Verify
+                    {actionLoading ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
+                    Verify & Approve Company
                   </button>
-                )}
-              </div>
+                </>
+              )}
             </div>
 
           </div>
         </div>
       )}
-
     </div>
   );
 }

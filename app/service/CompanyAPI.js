@@ -66,6 +66,51 @@ export const updateCompanyProfile = async (data) => {
     }
 };
 
+export const fetchCompanyWrokers = async () => {
+    try {
+        const response = await API.get('/workers/my-workers');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const createCompanyWorker = async (data) => {
+    try {
+        const response = await API.post('/workers/create', data);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const updateCompanyWorker = async (workerId, data) => {
+    try {
+        const response = await API.put(`/workers/update/${workerId}`, data);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const deleteCompanyWorker = async (workerId) => {
+    try {
+        const response = await API.delete(`/workers/delete/${workerId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const toggleCompanyWorkerStatus = async (workerId) => {
+    try {
+        const response = await API.patch(`/workers/toggle-status/${workerId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
 export const createCompanyService = async (data) => {
     try {
         const response = await API.post('/companies/create-service', data);

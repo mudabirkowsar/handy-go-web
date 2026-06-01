@@ -1,5 +1,8 @@
+'use client'
+
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
   UserCheck, 
@@ -24,20 +27,23 @@ const COLORS = {
 };
 
 export default function DashboardLayout({ children }) {
+  const pathname = usePathname();
+
   // Navigation Links array paired with Lucide Component references
   const navLinks = [
     { name: 'Overview', href: '/admin', icon: LayoutDashboard },
     { name: 'Manage Users', href: '/admin/manageusers', icon: UserCheck },
-    { name: 'Manage Services', href: '/dashboard/services', icon: Wrench },
+    { name: 'Manage Category Services', href: '/admin/manageCategories', icon: Wrench },
+    { name: 'Manage Providers', href: '/admin/manageproviders', icon: Wrench },
     { name: 'Manage Company', href: '/admin/managecompanies', icon: Users },
-    { name: 'Manage Bookings', href: '/dashboard/bookings', icon: CalendarDays },
-    { name: 'Payouts & Wallet', href: '/dashboard/financials', icon: Wallet },
-    { name: 'Business Hours', href: '/dashboard/hours', icon: Clock },
-    { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+    { name: 'Manage Bookings', href: '/admin/bookings', icon: CalendarDays },
+    { name: 'Payouts & Wallet', href: '/admin/financials', icon: Wallet },
+    { name: 'Business Hours', href: '/admin/hours', icon: Clock },
+    { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#F8FAFC] font-sans">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#F8FAFC] font-sans antialiased text-[#111827]">
       
       {/* LEFT SIDEBAR PANEL */}
       <aside className="w-64 h-full flex flex-col justify-between border-r border-[#E5E7EB] bg-[#FFFFFF] shrink-0">
@@ -50,7 +56,7 @@ export default function DashboardLayout({ children }) {
               C
             </div>
             <div>
-              <h1 className="text-sm font-bold text-[#0F172A] leading-tight">Company Panel</h1>
+              <h1 className="text-sm font-bold text-[#0F172A] leading-tight">Admin Panel</h1>
               <span className="text-[11px] font-medium text-[#08B36A] bg-emerald-50 px-1.5 py-0.5 rounded">Verified Enterprise</span>
             </div>
           </div>
@@ -59,18 +65,33 @@ export default function DashboardLayout({ children }) {
           <nav className="flex flex-col gap-1 p-4 overflow-y-auto max-h-[calc(100vh-140px)]">
             {navLinks.map((link) => {
               const IconComponent = link.icon;
+              const isActive = pathname === link.href;
+
               return (
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="flex items-center gap-3.5 px-4 py-3 text-sm font-semibold rounded-lg text-[#6B7280] hover:text-[#0F172A] hover:bg-[#F8FAFC] transition-all group"
+                  className={`relative flex items-center gap-3.5 px-4 py-3 text-sm font-semibold rounded-lg transition-all group overflow-hidden ${
+                    isActive 
+                      ? 'text-[#0F172A] bg-emerald-50/60 shadow-sm' 
+                      : 'text-[#6B7280] hover:text-[#0F172A] hover:bg-[#F8FAFC]'
+                  }`}
                 >
-                  {/* Lucide Icon Component wrapper with hover coloring */}
+                  {/* Left edge active bar marker */}
+                  {isActive && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#08B36A] rounded-r" />
+                  )}
+
+                  {/* Lucide Icon Component wrapper with hover/active coloring */}
                   <IconComponent 
                     size={18} 
-                    className="text-[#6B7280] group-hover:text-[#08B36A] transition-colors" 
+                    className={`transition-colors shrink-0 ${
+                      isActive 
+                        ? 'text-[#08B36A]' 
+                        : 'text-[#6B7280] group-hover:text-[#08B36A]'
+                    }`} 
                   />
-                  <span>{link.name}</span>
+                  <span className="truncate">{link.name}</span>
                 </Link>
               );
             })}
@@ -90,7 +111,7 @@ export default function DashboardLayout({ children }) {
           </div>
           <Link 
             href="/logout" 
-            className="text-xs p-2 rounded-lg hover:bg-red-50 text-[#6B7280] hover:text-[#EF4444] transition-colors flex items-center justify-center"
+            className="text-xs p-2 rounded-lg hover:bg-red-50 text-[#6B7280] hover:text-[#EF4444] transition-colors flex items-center justify-center shrink-0"
             title="Log Out"
           >
             <LogOut size={16} />
