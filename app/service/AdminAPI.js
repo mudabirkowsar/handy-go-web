@@ -55,7 +55,7 @@ export const fetchCompanyDetails = async (companyId) => {
 
 export const fetchAllCategories = async () => {
     try {
-        const response = await API.get('/categories/');
+        const response = await API.get('/categories');
         return response.data;
     } catch (error) {
         throw error;
