@@ -38,6 +38,7 @@ export default function DashboardLayout({ children }) {
     { name: 'Documents & KYC', href: '/dashboard/verification', icon: FolderLock },
     { name: 'Payouts & Wallet', href: '/dashboard/financials', icon: Wallet },
     { name: 'Business Hours', href: '/company/businesshours', icon: Clock },
+    { name: 'Manage Profile', href: '/company/manageprofile', icon: Settings },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];
 

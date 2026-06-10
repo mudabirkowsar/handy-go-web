@@ -57,9 +57,13 @@ export const fetchCompanyProfile = async () => {
     }
 };
 
-export const updateCompanyProfile = async (data) => {
+export const updateCompanyProfile = async (fromData) => {
     try {
-        const response = await API.put('/companies/update-profile', data);
+        const response = await API.put('/companies/update-profile', fromData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            }
+        });
         return response.data;
     } catch (error) {
         throw error;
